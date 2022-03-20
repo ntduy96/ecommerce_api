@@ -2,7 +2,10 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -36,6 +39,45 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        $this->renderable(function (AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                // Handle common error
+                return response()->json([
+                    'error' => [
+                        'code' => 'unauthorized',
+                        'message' => 'Unauthorized',
+                        'detail' => null,
+                    ]
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+        });
+
+        $this->renderable(function (ValidationException $e, $request) {
+            if ($request->is('api/*')) {
+                // Handle common error
+                return response()->json([
+                    'error' => [
+                        'code' => 'validation_error',
+                        'message' => 'Validation error',
+                        'detail' => $e->errors(),
+                    ]
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        });
+
+        $this->renderable(function (Throwable $e, $request) {
+            if ($request->is('api/*')) {
+                // Handle common error
+                return response()->json([
+                    'error' => [
+                        'code' => 'system_error',
+                        'message' => 'System error',
+                        'detail' => $e->getMessage(),
+                    ]
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
         });
     }
 }
